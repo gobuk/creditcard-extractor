@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Credit Card Extractor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <h1>Credit Card Extractor</h1>
+  <p class="sub">Upload the credit card CSV export to clean it, summarise by debtor and download the result.</p>
+
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+  <form class="card" method="post" action="{{ url_for('index') }}" enctype="multipart/form-data">
+    <div class="row">
+      <input type="file" name="file" accept=".csv,text/csv" required>
+      <button class="btn" type="submit">{{ 'Upload another file' if result else 'Upload &amp; process'|safe }}</button>
+    </div>
+  </form>
+
+  {% if result %}
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><b>{{ result.rows }}</b><span>rows</span></div>
+      <div class="stat"><b>{{ result.debtors }}</b><span>debtors</span></div>
+      <div class="stat"><b>{{ result.total }}</b><span>total Doc Amt</span></div>
+    </div>
+    <h2 style="margin-top:16px">Summary by debtor</h2>
+    <div class="scroll">{{ result.summary_html|safe }}</div>
+  </div>
+
+  <div class="card">
+    <form class="row" method="get" action="{{ url_for('show_result', token=result.token) }}" style="margin-bottom:12px">
+      <label for="debtor"><b>Debtor</b></label>
+      <select id="debtor" name="debtor" onchange="this.form.submit()">
+        <option value="">All debtors</option>
+        {% for d in result.debtor_list %}
+          <option value="{{ d }}" {{ 'selected' if d == result.selected else '' }}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      <a class="btn alt" href="{{ url_for('download', token=result.token, debtor=result.selected) }}">
+        Download {{ result.selected or 'all' }} CSV
+      </a>
+    </form>
+    <div class="scroll">{{ result.table_html|safe }}</div>
+    {% if result.truncated %}
+      <p class="note">Showing the first {{ result.shown }} of {{ result.filtered_rows }} rows. The download contains all of them.</p>
+    {% endif %}
+  </div>
+  <p class="note">Processed files are kept for one hour, then deleted.</p>
+  {% endif %}
+</main>
+</body>
+</html>
